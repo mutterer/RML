@@ -4,7 +4,7 @@
 label=RML
 icon=icon.png
 arg=<macro>
-showMessage("Read My Lifs", "Reads Leica *.lif files using BioFormats,\nskipping BF Options and BF Series dialogs.\n \nJerome Mutterer, 2021.");
+showMessage("Read My Lifs", "Reads multi-series files using BioFormats,\nskipping BF Options and BF Series dialogs.\n \nJerome Mutterer, 2021.");
 </macro>
 </line>
 
