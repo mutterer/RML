@@ -8,6 +8,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
+
+import javax.swing.JLabel;
+
 import loci.plugins.BF;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
@@ -23,6 +26,8 @@ public class RML_ implements PlugIn, MouseListener {
 	private ImporterOptions options;
 	private ImportProcess process;
 	private ImagePlus imp;
+	
+	private static final String[] formats = {".lif",".czi",".ets"};
 
 	public void run(String arg) {
 		GenericDialog gd = new GenericDialog("Specify file");
@@ -31,7 +36,7 @@ public class RML_ implements PlugIn, MouseListener {
 		if (gd.wasCanceled())
 			return;
 		String path = gd.getNextString();
-		if (path.toLowerCase().endsWith(".lif")||path.toLowerCase().endsWith(".czi")) {
+		if ( isSupportedExt(path)) {
 			try {
 				options = new ImporterOptions();
 				options.setId(path);
@@ -47,10 +52,8 @@ public class RML_ implements PlugIn, MouseListener {
 				thumbReader = new BufferedImageReader(process.getReader());
 				int sx = thumbReader.getThumbSizeX();
 				int sy = thumbReader.getThumbSizeY();
-				String title = path
-						.substring(path.lastIndexOf(File.separator) + 1);
-				imp = IJ.createImage("..." + title, "RGB black", sx, sy + 60,
-						count);
+				String title = path.substring(path.lastIndexOf(File.separator) + 1);
+				imp = IJ.createImage("..." + title, "RGB black", sx, sy + 60, count);
 				ImageStack stack = imp.getStack();
 				for (int i = 0; i < count; i++) {
 					thumbReader.setSeries(i);
@@ -70,9 +73,10 @@ public class RML_ implements PlugIn, MouseListener {
 						ip.setColor(new Color(255, 255, 255));
 						ip.fill();
 						ip.insert(im.getProcessor(), 0, 0);
-						ip.setFont(new Font("SansSerif", Font.BOLD, 10)); 
+						ip.setFont(new Font("SansSerif", Font.BOLD, 10));
 						ip.setColor(new Color(255, 0, 0));
-						ip.drawString(label2, 1, sy + 14);
+						ip.setAntialiasedText(true);
+						ip.drawString(label2, 5, sy + 14);
 						stack.setProcessor(ip, i + 1);
 					} catch (FormatException e) {
 						exc = e;
@@ -96,8 +100,14 @@ public class RML_ implements PlugIn, MouseListener {
 				e.printStackTrace();
 				IJ.log("Bioformats had problems reading this file.");
 			}
-			// unLifAll(path);
 		}
+	}
+	
+	private boolean isSupportedExt(String s) {
+		boolean supported = false;
+		for (String ext : formats)
+			if (s.toLowerCase().endsWith(ext)) supported=true;
+		return supported;
 	}
 
 	public void mouseEntered(MouseEvent me) {
@@ -114,6 +124,10 @@ public class RML_ implements PlugIn, MouseListener {
 
 	public void mouseClicked(MouseEvent me) {
 		if (me.getClickCount() == 2) {
+			if ((IJ.getToolName() == "zoom") && (!IJ.spaceBarDown())) {
+				IJ.showStatus("<!> Use SPACE+double click to open series, or change tools");
+				return;
+			}
 			int slice = imp.getCurrentSlice();
 			options.clearSeries();
 			options.setSeriesOn(slice - 1, true);
@@ -125,7 +139,7 @@ public class RML_ implements PlugIn, MouseListener {
 					String cmd = "run('Bio-Formats Importer', 'open=[";
 					cmd += options.getId();
 					cmd += "] autoscale color_mode=Composite rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT";
-					cmd += " series_"+ slice +"');\n";
+					cmd += " series_" + slice + "');\n";
 					Recorder.recordString(cmd);
 				}
 
@@ -138,28 +152,4 @@ public class RML_ implements PlugIn, MouseListener {
 			}
 		}
 	}
-//	public void unLifAll(String p) {
-//		int count = process.getSeriesCount();
-//		File f = new File(p);
-//		f.mkdir();
-//		for (int slice = 0; slice<count; slice++) {
-//			options.clearSeries();
-//			options.setSeriesOn(slice , true);
-//			options.setAutoscale(true);
-//			try {
-//				String label = process.getSeriesLabel(slice);
-//				ImagePlus[] imps = BF.openImagePlus(options);
-//				// IJ.log(f.toString()+File.separator+label);
-//				IJ.run(imps[0],"Tiff...", f.toString()+File.separator+label);
-//			} catch (FormatException e) {
-//				e.printStackTrace();
-//				IJ.log("Bioformats had problems reading this file.");
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//				IJ.log("Bioformats had problems reading this file.");
-//			}
-//		}
-//
-//
-//	}
 }
