@@ -5,3 +5,8 @@
 - Choose image using the thumbnails stack, double click to open image.
 - To open multiple series, shift-double click the first series, double click the last series to open.
 - Also discussed in this thread: https://twitter.com/jmutterer/status/1353995718948777990
+
+# Installation
+
+- Fiji: subscribe to the IBMP-CNRS update site
+- ImageJ: put the jar file in your plugins folder and restart (dependency on ActionBar plugin available [here](https://figshare.com/articles/dataset/Custom_toolbars_and_mini_applications_with_Action_Bar/3397603))
