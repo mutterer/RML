@@ -26,6 +26,8 @@ public class RML_ implements PlugIn, MouseListener {
 	private ImporterOptions options;
 	private ImportProcess process;
 	private ImagePlus imp;
+	private int first;
+	private int last;
 	
 	private static final String[] formats = {".lif",".czi",".ets"};
 
@@ -93,6 +95,7 @@ public class RML_ implements PlugIn, MouseListener {
 				ImageWindow win = imp.getWindow();
 				ImageCanvas canvas = win.getCanvas();
 				canvas.addMouseListener(this);
+				first = -1;
 			} catch (FormatException e) {
 				e.printStackTrace();
 				IJ.log("Bioformats had problems reading this file.");
@@ -129,20 +132,35 @@ public class RML_ implements PlugIn, MouseListener {
 				return;
 			}
 			int slice = imp.getCurrentSlice();
+			if (IJ.shiftKeyDown()) {
+				first = slice;
+				if (Recorder.record) { 
+					Recorder.recordString("// first selected series:"+first+"\n");
+				}
+				return;
+			}
 			options.clearSeries();
-			options.setSeriesOn(slice - 1, true);
+			if (first>0)  {
+				for (int i = first;i<=slice;i++) {	
+					options.setSeriesOn(i - 1, true); 
+					}
+			} else {
+				options.setSeriesOn(slice - 1, true);
+			}
 			options.setAutoscale(true);
 			try {
 				ImagePlus[] imps = BF.openImagePlus(options);
-				imps[0].show();
+				for (int i = 0;i<imps.length;i++) imps[i].show();
 				if (Recorder.record) {
 					String cmd = "run('Bio-Formats Importer', 'open=[";
 					cmd += options.getId();
 					cmd += "] autoscale color_mode=Composite rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT";
 					cmd += " series_" + slice + "');\n";
 					Recorder.recordString(cmd);
-				}
+					if (first>0) Recorder.recordString("// Careful: several series were selected.\n");
 
+				}
+				first = -1;
 			} catch (FormatException e) {
 				e.printStackTrace();
 				IJ.log("Bioformats had problems reading this file.");
