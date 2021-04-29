@@ -27,7 +27,6 @@ public class RML_ implements PlugIn, MouseListener {
 	private ImportProcess process;
 	private ImagePlus imp;
 	private int first;
-	private int last;
 	
 	private static final String[] formats = {".lif",".czi",".ets"};
 
