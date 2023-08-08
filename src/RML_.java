@@ -9,8 +9,6 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 
-import javax.swing.JLabel;
-
 import loci.plugins.BF;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
@@ -29,8 +27,18 @@ public class RML_ implements PlugIn, MouseListener {
 	private int first;
 	
 	private static final String[] formats = {".lif",".czi",".ets"};
+	
+	public static final String VERSION = "1.02";
+
+	// 1.02: Edoardo D'Imprima suggested to add visual feedback while opening large datasets
 
 	public void run(String arg) {
+		
+		if (arg.equals("about")) {
+			showAbout();
+			return;
+		}
+
 		GenericDialog gd = new GenericDialog("Specify file");
 		gd.addStringField("path", "");
 		gd.showDialog();
@@ -105,6 +113,14 @@ public class RML_ implements PlugIn, MouseListener {
 		}
 	}
 	
+	void showAbout() {
+		GenericDialog gd = new GenericDialog("About Read My Lifs...");
+		gd.addMessage("Read My Lifs by Jerome Mutterer");
+		gd.addMessage("Version: " + VERSION);
+		gd.hideCancelButton();
+		gd.showDialog();
+	}
+
 	private boolean isSupportedExt(String s) {
 		boolean supported = false;
 		for (String ext : formats)
@@ -147,14 +163,33 @@ public class RML_ implements PlugIn, MouseListener {
 				options.setSeriesOn(slice - 1, true);
 			}
 			options.setAutoscale(true);
+
+			Font font = new Font("SansSerif", Font.PLAIN, 19);
+			TextRoi roi = new TextRoi(27, 74, "Opening...", font);
+			roi.setAngle(45.0);			
+			imp.setOverlay(roi, Color.yellow, 1, Color.black);
+			
+			Thread t = new Thread(new bfOpener(options, slice));
+			t.start();
+
+		}
+	}
+	private class bfOpener implements Runnable {
+		private ImporterOptions options;
+		private int slice;
+		public bfOpener(ImporterOptions options, int slice) {
+			this.options = options;
+			this.slice = slice;			
+		}
+		public void run() {
 			try {
-				ImagePlus[] imps = BF.openImagePlus(options);
+				ImagePlus[] imps = BF.openImagePlus(this.options);
 				for (int i = 0;i<imps.length;i++) imps[i].show();
 				if (Recorder.record) {
 					String cmd = "run('Bio-Formats Importer', 'open=[";
-					cmd += options.getId();
+					cmd += this.options.getId();
 					cmd += "] autoscale color_mode=Composite rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT";
-					cmd += " series_" + slice + "');\n";
+					cmd += " series_" + this.slice + "');\n";
 					Recorder.recordString(cmd);
 					if (first>0) Recorder.recordString("// Careful: several series were selected.\n");
 
@@ -167,6 +202,9 @@ public class RML_ implements PlugIn, MouseListener {
 				e.printStackTrace();
 				IJ.log("Bioformats had problems reading this file.");
 			}
+			imp.setOverlay(null);
 		}
+
+
 	}
 }
